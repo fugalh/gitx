@@ -14,7 +14,7 @@ var highlightDiff = function(diff, element, callbacks) {
         callbacks = {};
     var start = new Date().getTime();
     element.className = "diff";
-    var content = diff.escapeHTML().replace(/\t/g, "    ");
+    var content = diff.escapeHTML();
 
     var file_index = 0;
 
