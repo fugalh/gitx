@@ -146,48 +146,239 @@
 	</head>
 	<body onload="load()">
 			<textarea style='display:none' id="orig_diff" rows="8" cols="40">
-diff --git a/.gitignore b/.gitignore
-index b89b7b7..3367a4e 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -1,4 +1,5 @@
- build
-+build/revision
- *.xcodeproj/*.pbxuser
- *.xcodeproj/*.perspectivev3
- *.xcodeproj/*.mode1v3
-diff --git a/ApplicationController.m b/ApplicationController.m
-index 86252cd..3a86d38 100644
---- a/ApplicationController.m
-+++ b/ApplicationController.m
-@@ -21,7 +21,7 @@ @implementation ApplicationController
-
- - (ApplicationController*)init
- {
--#ifndef NDEBUG
-+#ifdef DEBUG_BUILD
- 	[NSApp activateIgnoringOtherApps:YES];
- #endif
-
-@@ -92,12 +92,16 @@ - (IBAction)openPreferencesWindow:(id)sender
- - (IBAction)installCliTool:(id)sender;
- {
- 	BOOL success               = NO;
--	NSString* installationPath = @"/usr/local/bin/gitx";
-+	NSString* installationPath = @"/usr/local/bin/";
-+	NSString* installationName = @"gitx";
- 	NSString* toolPath         = [[NSBundle mainBundle] pathForResource:@"gitx" ofType:@""];
- 	if (toolPath) {
- 		AuthorizationRef auth;
- 		if (AuthorizationCreate(NULL, kAuthorizationEmptyEnvironment, kAuthorizationFlagDefaults, &auth) == errAuthorizationSuccess) {
--			char const* arguments[] = { "-f", "-s", [toolPath UTF8String], [installationPath UTF8String], NULL };
-+			char const* mkdir_arg[] = { "-p", [installationPath UTF8String], NULL};
-+			char const* mkdir	= "/bin/mkdir";
-+			AuthorizationExecuteWithPrivileges(auth, mkdir, kAuthorizationFlagDefaults, (char**)mkdir_arg, NULL);
-+			char const* arguments[] = { "-f", "-s", [toolPath UTF8String], [[installationPath stringByAppendingString: installationName] UTF8String],  NULL };
- 			char const* helperTool  = "/bin/ln";
- 			if (AuthorizationExecuteWithPrivileges(auth, helperTool, kAuthorizationFlagDefaults, (char**)arguments, NULL) == errAuthorizationSuccess) {
- 				int status;
+diff --git a/html/dragtest.html b/html/dragtest.html
+index dfa4c5c..ec48044 100644
+--- a/html/dragtest.html
++++ b/html/dragtest.html
+@@ -146,50 +146,8 @@
+ 	&lt;/head>
+ 	&lt;body onload="load()">
+ 			&lt;textarea style='display:none' id="orig_diff" rows="8" cols="40">
+-diff --git a/.gitignore b/.gitignore
+-index b89b7b7..3367a4e 100644
+---- a/.gitignore
+-+++ b/.gitignore
+-@@ -1,4 +1,5 @@
+- build
+-+build/revision
+- *.xcodeproj/*.pbxuser
+- *.xcodeproj/*.perspectivev3
+- *.xcodeproj/*.mode1v3
+-diff --git a/ApplicationController.m b/ApplicationController.m
+-index 86252cd..3a86d38 100644
+---- a/ApplicationController.m
+-+++ b/ApplicationController.m
+-@@ -21,7 +21,7 @@ @implementation ApplicationController
+-
+- - (ApplicationController*)init
+- {
+--#ifndef NDEBUG
+-+#ifdef DEBUG_BUILD
+- 	[NSApp activateIgnoringOtherApps:YES];
+- #endif
+-
+-@@ -92,12 +92,16 @@ - (IBAction)openPreferencesWindow:(id)sender
+- - (IBAction)installCliTool:(id)sender;
+- {
+- 	BOOL success               = NO;
+--	NSString* installationPath = @"/usr/local/bin/gitx";
+-+	NSString* installationPath = @"/usr/local/bin/";
+-+	NSString* installationName = @"gitx";
+- 	NSString* toolPath         = [[NSBundle mainBundle] pathForResource:@"gitx" ofType:@""];
+- 	if (toolPath) {
+- 		AuthorizationRef auth;
+- 		if (AuthorizationCreate(NULL, kAuthorizationEmptyEnvironment, kAuthorizationFlagDefaults, &amp;auth) == errAuthorizationSuccess) {
+--			char const* arguments[] = { "-f", "-s", [toolPath UTF8String], [installationPath UTF8String], NULL };
+-+			char const* mkdir_arg[] = { "-p", [installationPath UTF8String], NULL};
+-+			char const* mkdir	= "/bin/mkdir";
+-+			AuthorizationExecuteWithPrivileges(auth, mkdir, kAuthorizationFlagDefaults, (char**)mkdir_arg, NULL);
+-+			char const* arguments[] = { "-f", "-s", [toolPath UTF8String], [[installationPath stringByAppendingString: installationName] UTF8String],  NULL };
+- 			char const* helperTool  = "/bin/ln";
+- 			if (AuthorizationExecuteWithPrivileges(auth, helperTool, kAuthorizationFlagDefaults, (char**)arguments, NULL) == errAuthorizationSuccess) {
+- 				int status;
+ 			&lt;/textarea>
+ 			&lt;div id='lijstmetdingen'>&lt;/div>
+ 		&lt;/body>
+ 	&lt;/body>
+-&lt;/html>
+\ No newline at end of file
++&lt;/html>
+diff --git a/html/lib/diffHighlighter.js b/html/lib/diffHighlighter.js
+index 3ce80e1..0cf1fa3 100644
+--- a/html/lib/diffHighlighter.js
++++ b/html/lib/diffHighlighter.js
+@@ -103,10 +103,8 @@ var highlightDiff = function(diff, element, callbacks) {
+     for (var lineno = 0, lindex = 0; lineno &lt; lines.length; lineno++) {
+         var l = lines[lineno];
+ 
+-        var firstChar = l.charAt(0);
+-
+-        if (firstChar == "d" &amp;&amp; l.charAt(1) == "i") {
+-            // "diff", i.e. new file, we have to reset everything
++        // "diff", i.e. new file, we have to reset everything
++        if (l.match(/^diff/)) {
+ 
+             // diff always starts with a header
+             header = true;
+@@ -128,105 +126,92 @@ var highlightDiff = function(diff, element, callbacks) {
+         }
+ 
+         if (header) {
+-            if (firstChar == "n") {
+-                if (l.match(/^new file mode .*$/))
+-                    startname = "/dev/null";
+-
+-                if (match = l.match(/^new mode (.*)$/)) {
+-                    mode_change = true;
+-                    new_mode = match[1];
+-                }
++            if (l.match(/^new file mode .*$/)) {
++                startname = "/dev/null";
++                continue;
++            }
++            if (match = l.match(/^new mode (.*)$/)) {
++                mode_change = true;
++                new_mode = match[1];
+                 continue;
+             }
+-            if (firstChar == "o") {
+-                if (match = l.match(/^old mode (.*)$/)) {
+-                    mode_change = true;
+-                    old_mode = match[1];
+-                }
++            if (match = l.match(/^old mode (.*)$/)) {
++                mode_change = true;
++                old_mode = match[1];
+                 continue;
+             }
+ 
+-            if (firstChar == "d") {
+-                if (l.match(/^deleted file mode .*$/))
+-                    endname = "/dev/null";
++            if (l.match(/^deleted file mode .*$/)) {
++                endname = "/dev/null";
+                 continue;
+             }
+-            if (firstChar == "-") {
+-                if (match = l.match(/^--- (a\/)?(.*)$/))
+-                    startname = match[2];
++            if (match = l.match(/^--- (a\/)?(.*)$/)) {
++                startname = match[2];
+                 continue;
+             }
+-            if (firstChar == "+") {
+-                if (match = l.match(/^\+\+\+ (b\/)?(.*)$/))
+-                    endname = match[2];
++            if (match = l.match(/^\+\+\+ (b\/)?(.*)$/)) {
++                endname = match[2];
+                 continue;
+             }
+             // If it is a complete rename, we don't know the name yet
+             // We can figure this out from 'rename from.. rename to..'
+-            if (firstChar == 'r') {
+-                if (match = l.match(/^rename (from|to) (.*)$/)) {
+-                    if (match[1] == "from")
+-                        startname = match[2];
+-                    else
+-                        endname = match[2];
+-                }
++            if (match = l.match(/^rename (from|to) (.*)$/)) {
++                if (match[1] == "from")
++                    startname = match[2];
++                else
++                    endname = match[2];
+                 continue;
+             }
+-            if (firstChar == "B") { // "Binary files .. and .. differ"
++            // We might not have a diff from the binary file if it's new.
++            // So, we use a regex to figure that out
++            if (match =
++                l.match(/^Binary files (a\/)?(.*) and (b\/)?(.*) differ$/)) {
+                 binary = true;
+-                // We might not have a diff from the binary file if it's new.
+-                // So, we use a regex to figure that out
+-
+-                if (match =
+-                    l.match(/^Binary files (a\/)?(.*) and (b\/)?(.*) differ$/))
+-                {
+-                    startname = match[2];
+-                    endname = match[4];
+-                }
++                startname = match[2];
++                endname = match[4];
++                continue;
+             }
+ 
+             // Finish the header
+-            if (firstChar == "@")
++            if (l.match(/^@/))
+                 header = false;
+             else
+                 continue;
+         }
+ 
+         sindex = "index=" + lindex.toString() + " ";
+-        if (firstChar == "+" || firstChar == "-") {
++        if (l.match(/^(\+|-) /)) {
+             // Highlight trailing whitespace
+             if (m = l.match(/\s+$/))
+                 l = l.replace(/\s+$/,
+                               "&lt;span class='whitespace'>" + m + "&lt;/span>");
+         }
+ 
+-        if (firstChar == "+") {
++        if (l.match(/^\+ /)) {
+             line1 += "\n";
+             line2 += ++hunk_start_line_2 + "\n";
+-            diffContent += "&lt;div " + sindex + "class='addline'>" + l + "&lt;/div>";
+-        } else if (firstChar == "-") {
++            diffContent +=
++                "&lt;div " + sindex + "class='addline'>" + l + "&lt;/div>";
++        } else if (l.match(/^- /)) {
+             line1 += ++hunk_start_line_1 + "\n";
+             line2 += "\n";
+-            diffContent += "&lt;div " + sindex + "class='delline'>" + l + "&lt;/div>";
+-        } else if (firstChar == "@") {
+-            if (header) {
++            diffContent +=
++                "&lt;div " + sindex + "class='delline'>" + l + "&lt;/div>";
++        } else if (m = l.match(/^@@ \-([0-9]+),?\d* \+(\d+),?\d* @@/)) {
++            if (header)
+                 header = false;
+-            }
+ 
+-            if (m = l.match(/@@ \-([0-9]+),?\d* \+(\d+),?\d* @@/))
+-            {
+-                hunk_start_line_1 = parseInt(m[1]) - 1;
+-                hunk_start_line_2 = parseInt(m[2]) - 1;
+-            }
++            hunk_start_line_1 = parseInt(m[1]) - 1;
++            hunk_start_line_2 = parseInt(m[2]) - 1;
+             line1 += "...\n";
+             line2 += "...\n";
+-            diffContent += "&lt;div " + sindex + "class='hunkheader'>" +
+-                l + "&lt;/div>";
+-        } else if (firstChar == " ") {
++            diffContent +=
++                "&lt;div " + sindex + "class='hunkheader'>" + l + "&lt;/div>";
++        } else if (l.match(/^  /)) {
+             line1 += ++hunk_start_line_1 + "\n";
+             line2 += ++hunk_start_line_2 + "\n";
+-            diffContent += "&lt;div " + sindex + "class='noopline'>" +
+-                l + "&lt;/div>";
++            diffContent +=
++                "&lt;div " + sindex + "class='noopline'>" + l + "&lt;/div>";
+         }
+         lindex++;
+     }
+@@ -237,6 +222,5 @@ var highlightDiff = function(diff, element, callbacks) {
+     element.innerHTML = finalContent;
+ 
+     // TODO: Replace this with a performance pref call
+-    if (false)
+-        Controller.log_("Total time:" + (new Date().getTime() - start));
++    Controller.log_("Total time:" + (new Date().getTime() - start));
+ }
 			</textarea>
 			<div id='lijstmetdingen'></div>
 		</body>
