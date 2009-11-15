@@ -100,6 +100,8 @@ var highlightDiff = function(diff, element, callbacks) {
         startname = "";
         endname = "";
     }
+    var adds = "";
+    var subs = "";
     for (var lineno = 0, lindex = 0; lineno < lines.length; lineno++) {
         var l = lines[lineno];
 
@@ -187,16 +189,31 @@ var highlightDiff = function(diff, element, callbacks) {
                               "<span class='whitespace'>" + m + "</span>");
         }
 
-        if (l.match(/^\+/)) {
-            line1 += "\n";
-            line2 += ++hunk_start_line_2 + "\n";
-            diffContent +=
-                "<div " + sindex + "class='addline'>" + l + "</div>";
-        } else if (l.match(/^-/)) {
+        if (l.match(/^-/)) {
             line1 += ++hunk_start_line_1 + "\n";
             line2 += "\n";
+            subs += l + "\n";
+        } else if (l.match(/^\+/)) {
+            line1 += "\n";
+            line2 += ++hunk_start_line_2 + "\n";
+            adds += l + "\n";
+        } else if (l.match(/^ /)) {
+            line1 += ++hunk_start_line_1 + "\n";
+            line2 += ++hunk_start_line_2 + "\n";
+
+            if (subs != "")
+                diffContent +=
+                    "<div " + sindex + "class='delline'>" + subs + "</div>";
+
+            if (adds != "")
+                diffContent +=
+                    "<div " + sindex + "class='addline'>" + adds + "</div>";
+
+            subs = "";
+            adds = "";
+
             diffContent +=
-                "<div " + sindex + "class='delline'>" + l + "</div>";
+                "<div " + sindex + "class='noopline'>" + l + "</div>";
         } else if (m = l.match(/^@@ \-([0-9]+),?\d* \+(\d+),?\d* @@/)) {
             if (header)
                 header = false;
@@ -207,11 +224,6 @@ var highlightDiff = function(diff, element, callbacks) {
             line2 += "...\n";
             diffContent +=
                 "<div " + sindex + "class='hunkheader'>" + l + "</div>";
-        } else if (l.match(/^ /)) {
-            line1 += ++hunk_start_line_1 + "\n";
-            line2 += ++hunk_start_line_2 + "\n";
-            diffContent +=
-                "<div " + sindex + "class='noopline'>" + l + "</div>";
         }
         lindex++;
     }
