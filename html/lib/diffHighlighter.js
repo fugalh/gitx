@@ -36,6 +36,8 @@ var highlightDiff = function(diff, element, callbacks) {
     var header = false;
 
     var finishContent = function() {
+        finish_adddel();
+
         if (!file_index) {
             file_index++;
             return;
@@ -100,10 +102,32 @@ var highlightDiff = function(diff, element, callbacks) {
         startname = "";
         endname = "";
     }
+
     var adds = "";
-    var subs = "";
+    var dels = "";
+    function finish_adddel() {
+        //alignStrings(dels, adds);
+        if (dels != "") {
+            dels = "-" + dels.replace(/\n/g, "\n-");
+            diffContent +=
+                "<div " + sindex + "class='delline'>" + dels + "</div>";
+        }
+
+        if (adds != "") {
+            adds = "+" + adds.replace(/\n/g, "\n+");
+            diffContent +=
+                "<div " + sindex + "class='addline'>" + adds + "</div>";
+        }
+
+        dels = "";
+        adds = "";
+    }
+
     for (var lineno = 0, lindex = 0; lineno < lines.length; lineno++) {
         var l = lines[lineno];
+
+        if (l.match(/^\\ No newline/))
+            continue;
 
         // "diff", i.e. new file, we have to reset everything
         if (l.match(/^diff/)) {
@@ -192,34 +216,22 @@ var highlightDiff = function(diff, element, callbacks) {
         if (l.match(/^-/)) {
             line1 += ++hunk_start_line_1 + "\n";
             line2 += "\n";
-            subs += l.substr(1) + "\n";
+            if (dels != "")
+                dels += "\n";
+            dels += l.substr(1);
         } else if (l.match(/^\+/)) {
             line1 += "\n";
             line2 += ++hunk_start_line_2 + "\n";
-            adds += l.substr(1) + "\n";
-        } else if (l.match(/^ /)) {
+            if (adds != "")
+                adds += "\n";
+            adds += l.substr(1);
+        } else {
+            finish_adddel();
+        }
+
+        if (l.match(/^ /)) {
             line1 += ++hunk_start_line_1 + "\n";
             line2 += ++hunk_start_line_2 + "\n";
-
-            if (subs != "" || adds != "") {
-                // we have collected some adds and subs, now to align them and
-                // highlight them
-                //alignStrings(subs, adds);
-                if (subs != "") {
-                    subs = "-" + subs.replace(/\n/g, "\n-");
-                    diffContent +=
-                        "<div " + sindex + "class='delline'>" + subs + "</div>";
-                }
-
-                if (adds != "") {
-                    adds = "+" + adds.replace(/\n/g, "\n+");
-                    diffContent +=
-                        "<div " + sindex + "class='addline'>" + adds + "</div>";
-                }
-
-                subs = "";
-                adds = "";
-            }
 
             diffContent +=
                 "<div " + sindex + "class='noopline'>" + l + "</div>";
