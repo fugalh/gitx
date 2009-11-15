@@ -192,25 +192,34 @@ var highlightDiff = function(diff, element, callbacks) {
         if (l.match(/^-/)) {
             line1 += ++hunk_start_line_1 + "\n";
             line2 += "\n";
-            subs += l + "\n";
+            subs += l.substr(1) + "\n";
         } else if (l.match(/^\+/)) {
             line1 += "\n";
             line2 += ++hunk_start_line_2 + "\n";
-            adds += l + "\n";
+            adds += l.substr(1) + "\n";
         } else if (l.match(/^ /)) {
             line1 += ++hunk_start_line_1 + "\n";
             line2 += ++hunk_start_line_2 + "\n";
 
-            if (subs != "")
-                diffContent +=
-                    "<div " + sindex + "class='delline'>" + subs + "</div>";
+            if (subs != "" || adds != "") {
+                // we have collected some adds and subs, now to align them and
+                // highlight them
+                //alignStrings(subs, adds);
+                if (subs != "") {
+                    subs = "-" + subs.replace(/\n/g, "\n-");
+                    diffContent +=
+                        "<div " + sindex + "class='delline'>" + subs + "</div>";
+                }
 
-            if (adds != "")
-                diffContent +=
-                    "<div " + sindex + "class='addline'>" + adds + "</div>";
+                if (adds != "") {
+                    adds = "+" + adds.replace(/\n/g, "\n+");
+                    diffContent +=
+                        "<div " + sindex + "class='addline'>" + adds + "</div>";
+                }
 
-            subs = "";
-            adds = "";
+                subs = "";
+                adds = "";
+            }
 
             diffContent +=
                 "<div " + sindex + "class='noopline'>" + l + "</div>";
