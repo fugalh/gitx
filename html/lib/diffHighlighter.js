@@ -105,7 +105,7 @@ var highlightDiff = function(diff, element, callbacks) {
 
     var adds = "";
     var dels = "";
-    function finish_adddel() {
+    var finish_adddel = function() {
         //alignStrings(dels, adds);
         if (dels != "") {
             dels = "-" + dels.replace(/\n/g, "\n-");
