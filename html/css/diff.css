@@ -36,6 +36,11 @@
   color: #bbb;
 }
 
+.nonl {
+    color: #bbb;
+    /*background-color: #bFb;*/
+}
+
 
 .diff .file .diffcontent .lines .delline {
   background-color: #FEE;
@@ -46,9 +51,9 @@
   background-color: #DFD;
   color: #080;
 }
-
 .diff .file .diffcontent .lines .whitespace {
 	background-color: rgba(255,0,0,0.5);
+        color: white;
 }
 
 #CurrentHunk {

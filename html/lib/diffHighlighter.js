@@ -123,11 +123,14 @@ var highlightDiff = function(diff, element, callbacks) {
         adds = "";
     }
 
+    var nonl = false;
     for (var lineno = 0, lindex = 0; lineno < lines.length; lineno++) {
         var l = lines[lineno];
 
-        if (l.match(/^\\ No newline/))
+        if (l.match(/^\\ No newline/)) {
+            nonl = true;
             continue;
+        }
 
         // "diff", i.e. new file, we have to reset everything
         if (l.match(/^diff/)) {
@@ -225,6 +228,10 @@ var highlightDiff = function(diff, element, callbacks) {
             if (adds != "")
                 adds += "\n";
             adds += l.substr(1);
+            if (nonl) {
+                adds += "<span class='nonl'>↵</span>";
+                nonl = false;
+            }
         } else {
             finish_adddel();
         }
