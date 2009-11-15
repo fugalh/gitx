@@ -108,13 +108,14 @@ var highlightDiff = function(diff, element, callbacks) {
     var finish_adddel = function() {
         //alignStrings(dels, adds);
         if (dels != "") {
-            dels = "-" + dels.replace(/\n/g, "\n-");
+            // might be faster to do a substring instead of regex-chomp?
+            dels = "-" + dels.replace(/\n$/,'').replace(/\n/g, "\n-");
             diffContent +=
                 "<div " + sindex + "class='delline'>" + dels + "</div>";
         }
 
         if (adds != "") {
-            adds = "+" + adds.replace(/\n/g, "\n+");
+            adds = "+" + adds.replace(/\n$/,'').replace(/\n/g, "\n+");
             diffContent +=
                 "<div " + sindex + "class='addline'>" + adds + "</div>";
         }
@@ -219,19 +220,16 @@ var highlightDiff = function(diff, element, callbacks) {
         if (l.match(/^-/)) {
             line1 += ++hunk_start_line_1 + "\n";
             line2 += "\n";
-            if (dels != "")
-                dels += "\n";
-            dels += l.substr(1);
+            dels += l.substr(1) + "\n";
         } else if (l.match(/^\+/)) {
             line1 += "\n";
             line2 += ++hunk_start_line_2 + "\n";
-            if (adds != "")
-                adds += "\n";
             adds += l.substr(1);
             if (nonl) {
                 adds += "<span class='nonl'>↵</span>";
                 nonl = false;
-            }
+            } else
+                adds += "\n";
         } else {
             finish_adddel();
         }
