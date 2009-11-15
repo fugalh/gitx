@@ -180,7 +180,7 @@ var highlightDiff = function(diff, element, callbacks) {
         }
 
         sindex = "index=" + lindex.toString() + " ";
-        if (l.match(/^(\+|-) /)) {
+        if (l.match(/^(\+|-)/)) {
             // Highlight trailing whitespace
             if (m = l.match(/\s+$/))
                 l = l.replace(/\s+$/,
