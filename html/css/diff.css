@@ -51,18 +51,14 @@
   background-color: #DFD;
   color: #080;
 }
-.diff .file .diffcontent .lines .whitespace {
-	background-color: rgba(255,0,0,0.5);
-        color: white;
-}
 
 #CurrentHunk {
 	border-left: 5px solid black;
 }
 
-.delline .unique {
+.delline .unique,.whitespace {
     background-color: #fdd;
 }
-.addline .unique {
+.addline .unique,.whitespace {
     background-color: #bfb;
 }
