@@ -42,12 +42,12 @@
 }
 
 
-.diff .file .diffcontent .lines .delline {
+.delline {
   background-color: #FEE;
   color: #B00;
 }
 
-.diff .file .diffcontent .lines .addline {
+.addline {
   background-color: #DFD;
   color: #080;
 }
@@ -58,4 +58,11 @@
 
 #CurrentHunk {
 	border-left: 5px solid black;
+}
+
+.delline .unique {
+    background-color: #fdd;
+}
+.addline .unique {
+    background-color: #bfb;
 }

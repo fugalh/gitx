@@ -106,16 +106,118 @@ var highlightDiff = function(diff, element, callbacks) {
     var adds = "";
     var dels = "";
     var finish_adddel = function() {
-        //alignStrings(dels, adds);
-        if (dels != "") {
-            // might be faster to do a substring instead of regex-chomp?
-            dels = "-" + dels.replace(/\n$/,'').replace(/\n/g, "\n-");
+        if (adds == "" && dels == "")
+            return;
+
+        // chomp extra newlines
+        nodel = (dels == "");
+        noadd = (adds == "");
+        dels = dels.replace(/\n$/,'');
+        adds = adds.replace(/\n$/,'');
+        if (nonl) {
+            adds += "↵";
+            nonl = false;
+        }
+
+        // align them with dynamic programming
+        // kinda slow, so if the chunk is too large let's just skip it (or
+        // later, we can do some kind of cheaper less-perfect alignment). This
+        // number is somewhat arbitrary, more conscientious performance testing
+        // in order to find the most reasonable balance is probably in order.
+        if (dels.length > 0 && adds.length > 0 &&
+            adds.length * dels.length < 100000 ) {
+
+            // dynamic programming
+            var scores = new Array(dels.length + 1);
+            for (var i=0; i<=dels.length; i++)
+                scores[i] = 0;
+            var choices = new Array(adds.length);
+            for (var j=0; j<adds.length; j++) {
+                choices[j] = "";
+                prev_scores = [].concat(scores);
+                for (var i=0; i<dels.length; i++) {
+                    var score = prev_scores[i+1];
+                    var choice = 'u';
+                    if (score < scores[i]) {
+                        choice = 'l';
+                        score = scores[i];
+                    }
+                    if (dels[i] == adds[j] && score <= prev_scores[i] + 1) {
+                        choice = 'b';
+                        score = prev_scores[i] + 1;
+                    }
+
+                    scores[i+1] = score;
+                    choices[j] += choice;
+                }
+            }
+
+            // pain in the neck markup in the aftermath of dynamic programming
+            var dels_span_open = false, adds_span_open = false;
+            var dels2 = "", adds2 = "";
+            var i = dels.length-1, j = adds.length-1;
+            while (i >= 0 || j >= 0) {
+                if (j >= 0)
+                    if (i >= 0)
+                        c = choices[j][i];
+                    else
+                        c = 'u';
+                else
+                    c = 'l';
+
+                switch (c) {
+                    case 'b':
+                        if (dels_span_open) {
+                            dels2 = '<span class="unique">' + dels2;
+                            dels_span_open = false;
+                        }
+                        dels2 = dels[i--] + dels2;
+
+                        if (adds_span_open) {
+                            adds2 = '<span class="unique">' + adds2;
+                            adds_span_open = false;
+                        }
+                        adds2 = adds[j--] + adds2;
+                        break;
+                    case 'l':
+                        if (!dels_span_open) {
+                            dels2 = '</span>' + dels2;
+                            dels_span_open = true;
+                        }
+                        dels2 = dels[i--] + dels2;
+                        break;
+                    case 'u':
+                        if (!adds_span_open) {
+                            adds2 = '</span>' + adds2;
+                            adds_span_open = true;
+                        }
+                        adds2 = adds[j--] + adds2;
+                        break;
+                }
+            }
+            if (dels_span_open) {
+                dels2 = '<span class="unique">' + dels2;
+                dels_span_open = false;
+            }
+            if (adds_span_open) {
+                adds2 = '<span class="unique">' + adds2;
+                adds_span_open = false;
+            }
+
+            dels = dels2;
+            adds = adds2;
+        }
+
+        // add the - and + back in
+        if (!nodel) {
+            var minus = '<span class="delline">-</span>';
+            dels = minus + dels.replace(/\n/g, "\n" + minus);
             diffContent +=
                 "<div " + sindex + "class='delline'>" + dels + "</div>";
         }
-
-        if (adds != "") {
-            adds = "+" + adds.replace(/\n$/,'').replace(/\n/g, "\n+");
+        if (!noadd) {
+            var plus = '<span class="addline">+</span>';
+            adds = plus + adds.replace(/\n/g, "\n" + plus);
             diffContent +=
                 "<div " + sindex + "class='addline'>" + adds + "</div>";
         }
@@ -210,13 +312,6 @@ var highlightDiff = function(diff, element, callbacks) {
         }
 
         sindex = "index=" + lindex.toString() + " ";
-        if (l.match(/^(\+|-)/)) {
-            // Highlight trailing whitespace
-            if (m = l.match(/\s+$/))
-                l = l.replace(/\s+$/,
-                              "<span class='whitespace'>" + m + "</span>");
-        }
-
         if (l.match(/^-/)) {
             line1 += ++hunk_start_line_1 + "\n";
             line2 += "\n";
@@ -224,12 +319,7 @@ var highlightDiff = function(diff, element, callbacks) {
         } else if (l.match(/^\+/)) {
             line1 += "\n";
             line2 += ++hunk_start_line_2 + "\n";
-            adds += l.substr(1);
-            if (nonl) {
-                adds += "<span class='nonl'>↵</span>";
-                nonl = false;
-            } else
-                adds += "\n";
+            adds += l.substr(1) + "\n";
         } else {
             finish_adddel();
         }
